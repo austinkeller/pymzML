@@ -1552,9 +1552,28 @@ class Spectrum(dict):
                 0.99.1 >> <spectrum id="S20" scanNumber="20" msLevel="2">
                 so far regex hold for this ...
                 '''
-                self['id'] = int(re.search( r'[0-9]*$', treeObject.get('id')  ).group())
+                try:
+                    # HACK Won't work for mzml versions <= 0.99.1
+                    index_tagline = self._xmlTree.get('index')
+                    self['id'] = int(index_tagline)
+                except:
+                    # revert to master pymzml method
+                    self['id'] = int(re.search(r'[0-9]*$', treeObject.get('id')).group())
             except:
                 self['id'] = None
+            try:
+                # Add a copy of the full id string for user-defined parsing
+                self['id_full'] = self._xmlTree.get('id')
+            except:
+                self['id_full'] = None
+            try:
+                # Attempt to parse the id into key-value pairs
+                ID_tagline = self._xmlTree.get('id')
+                self['id_'] = dict()
+                for header in re.findall(r'([a-zA-Z]*)=', ID_tagline):
+                    self['id_'][header] = re.findall(r'{0}=([a-zA-Z0-9]*)'.format(header), ID_tagline)[0]
+            except:
+                self['id_full'] = None
             self.dataType = "spectrum"
 
         self['defaultArrayLength'] = int(treeObject.get('defaultArrayLength'))

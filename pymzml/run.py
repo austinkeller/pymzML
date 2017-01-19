@@ -246,6 +246,7 @@ class Reader(object):
         self.info['offsets']['TIC'] = None
         seeker.seek(0, 2)
         spectrumIndexPattern = RegexPatterns.spectrumIndexPattern
+        simIndexPattern = RegexPatterns.simIndexPattern
         for _ in range(1, 10):  # max 10kbyte
             # some converters fail in writing a correct index
             # we found
@@ -263,10 +264,12 @@ class Reader(object):
                         bytes.decode(match.group('offset'))
                     )
 
-                match_spec = spectrumIndexPattern.search(line)
-                if match_spec is not None:
+                match = simIndexPattern.search(line)
+                if not match:
+                    match = spectrumIndexPattern.search(line)
+                if match:
                     spec_byte_offset = int(
-                        bytes.decode(match_spec.group('offset'))
+                        bytes.decode(match.group('offset'))
                     )
                     sanity_check_set.add(spec_byte_offset)
 
@@ -304,6 +307,7 @@ class Reader(object):
             # 1.0 >>
             #   <offset idRef="S16004" nativeID="16004">236442042</offset>
             #   <offset idRef="SIM SIC 651.5">330223452</offset>\n'
+            index = 0
             for line in seeker:
                 match_spec = spectrumIndexPattern.search(line)
                 if match_spec and match_spec.group('nativeID') == b'':
@@ -314,15 +318,17 @@ class Reader(object):
                     nativeID = int(bytes.decode(match_spec.group('nativeID')))
                     self.info['offsets'][nativeID] = offset
                     self.info['offsetList'].append(offset)
+                    index += 1
                 elif match_sim:
                     offset = int(bytes.decode(match_sim.group('offset')))
                     nativeID = bytes.decode(match_sim.group('nativeID'))
                     try:
-                        nativeID = int(nativeID)
+                        idx = int(nativeID)
                     except:
-                        pass
-                    self.info['offsets'][nativeID] = offset
+                        idx = index
+                    self.info['offsets'][idx] = offset
                     self.info['offsetList'].append(offset)
+                    index += 1
             # opening seeker in normal mode again
         seeker.close()
         seeker = codecs.open(
