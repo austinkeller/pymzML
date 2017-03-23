@@ -85,8 +85,18 @@ class TestRun(unittest.TestCase):
         # self.assertTrue(is_seekable)
         self.assertTrue(run.info['seekable'])
         run.info['force_seeking'] = True
-        spec = run[9]
+        # Test access by scan id
+        spec = run.get_spectrum_by_id(9)
         self.assertEqual(spec['defaultArrayLength'], 1069)
+        # Test indexing
+        spec = run[8]
+        self.assertEqual(spec['defaultArrayLength'], 1069)
+        # Test spectrum length
+        self.assertEqual(len(run), 10)
+        # Test iteration through full spectrum range
+        for i in range(0, len(run)):
+            spec = run[i]
+            self.assertTrue(spec is not None)
 
 
 if __name__ == '__main__':

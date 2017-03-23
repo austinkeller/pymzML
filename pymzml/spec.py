@@ -1584,10 +1584,10 @@ class Spectrum(dict):
                 try:
                     # HACK Won't work for mzml versions <= 0.99.1
                     index_tagline = self._xmlTree.get('index')
-                    self['id'] = int(index_tagline)
+                    self['index'] = int(index_tagline)
                 except:
-                    # revert to master pymzml method
-                    self['id'] = int(re.search(r'[0-9]*$', treeObject.get('id')).group())
+                    pass
+                self['id'] = int(re.search(r'[0-9]*$', treeObject.get('id')).group())
             except:
                 self['id'] = None
             try:

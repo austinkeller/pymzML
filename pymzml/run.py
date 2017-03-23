@@ -130,6 +130,7 @@ class Reader(object):
 
         self.info['spectrum_count'] = 0
         self.info['chromatogram_count'] = 0
+        self.info['indexed_spectrum_count'] = 0
 
         self.info['obo_version'] = obo_version
 
@@ -328,7 +329,7 @@ class Reader(object):
                         idx = index
                     self.info['offsets'][idx] = offset
                     self.info['offsetList'].append(offset)
-                    index += 1
+            self.info['indexed_spectrum_count'] = index
             # opening seeker in normal mode again
         seeker.close()
         seeker = codecs.open(
@@ -398,7 +399,7 @@ class Reader(object):
 
             # Check if everything is ok (e.g. we found the right number of
             # chromatograms and spectra) and then return the dictionary.
-            if (chromcnt == len(chrom_positions) and speccnt == len(spec_positions)):
+            if chromcnt == len(chrom_positions) and speccnt == len(spec_positions):
                 positions = {}
                 positions.update(chrom_positions)
                 positions.update(spec_positions)
@@ -557,10 +558,73 @@ class Reader(object):
 
                 return self.spectrum
 
-    def __getitem__(self, value):
+    def __getitem__(self, idx):
         '''
         Random access to spectra if mzML fill is indexed,
-        not compressed and not truncted.
+        not compressed and not truncated.
+
+        Example:
+
+        >>> spectrum_with_index_100 = msrun[100]
+
+        '''
+        answer = None
+        if self.info['seekable'] is True:
+            if len(self.info['offsets']) == 0:
+                raise IOError("File does support random access: index list missing...")
+
+            if 0 <= idx < len(self):
+                startPos = self.info['offsetList'][idx]
+                if idx == len(self) - 1:
+                    endPos = os.path.getsize(self.info['filename'])
+                else:
+                    endPos = self.info['offsetList'][idx + 1]
+
+                self.seeker.seek(startPos, 0)
+                data = self.seeker.read(endPos - startPos)
+                try:
+                    self.spectrum.initFromTreeObject(cElementTree.fromstring(data))
+                except:
+                    # have closing </mzml> & </run> &or </spectrumList>
+                    startingTag = data.split()[0]
+                    stopIndex = data.index('</' + startingTag[1:] + '>')
+                    self.spectrum.initFromTreeObject(
+                        cElementTree.fromstring(data[:stopIndex + len(startingTag) + 2])
+                    )
+                answer = self.spectrum
+            else:
+                raise IndexError("Run does not contain index {0}".format(idx))
+        else:
+            # Reopen the file from the beginning if possible
+            force_seeking = self.info.get('force_seeking', False)
+            if force_seeking is False:
+                self.info['fileObject'].close()
+
+                assert self.info['filename'], \
+                    'Must specify either filename or index for random spectrum access'
+                self.info['fileObject'], _ = self.__open_file(self.info['filename'])
+                self.iter = self.__init_iter()
+
+                for spec in self:
+                    if spec['index'] == idx:
+                        answer = spec
+                        break
+
+        return answer
+
+    def __len__(self):
+        if self.info['seekable']:
+            return self.info['indexed_spectrum_count']
+        else:
+            return self.info['spectrum_count']
+
+    def get_spectrum_ids(self):
+        return self.info['offsets'].keys()
+
+    def get_spectrum_by_id(self, value):
+        '''
+        Random access to spectra if mzML fill is indexed,
+        not compressed and not truncated.
 
         Example:
 
