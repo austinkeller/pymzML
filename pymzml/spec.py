@@ -1493,30 +1493,59 @@ class Spectrum(dict):
 
             elif element.tag.endswith('precursorList'):
                 # TODO remove this completely?
-                self['precursors'] = []
+                self['precursors'] = {}
+
+            elif element.tag.endswith('isolationWindow'):
+                if 'precursors' not in self.keys():
+                    self['precursors'] = {}
+                if 'isolationWindows' not in self['precursors'].keys():
+                    self['precursors']['isolationWindows'] = []
+                self['precursors']['isolationWindows'].append({'mz': None, 'lower_offset': None, 'upper_offset': None})
+                for subElement in element.getiterator():
+                    if subElement.tag.endswith('cvParam'):
+                        accession = subElement.get('accession')
+                        if accession == 'MS:1000827':
+                            try:
+                                self['precursors']['isolationWindows'][-1]['mz'] = float(subElement.get('value'))
+                            except ValueError:
+                                self['precursors']['isolationWindows'][-1]['mz'] = subElement.get('value')
+                        elif accession == 'MS:1000828':
+                            try:
+                                self['precursors']['isolationWindows'][-1]['lower_offset'] = float(subElement.get('value'))
+                            except ValueError:
+                                self['precursors']['isolationWindows'][-1]['lower_offset'] = subElement.get('value')
+                        elif accession == 'MS:1000829':
+                            try:
+                                self['precursors']['isolationWindows'][-1]['upper_offset'] = float(subElement.get('value'))
+                            except ValueError:
+                                self['precursors']['isolationWindows'][-1]['upper_offset'] = subElement.get('value')
+                        else:
+                            pass
 
             elif element.tag.endswith('selectedIon'):
                 if 'precursors' not in self.keys():
-                    self['precursors'] = []
-                self['precursors'].append({'mz': None, 'charge': None})
+                    self['precursors'] = {}
+                if 'selectedIons' not in self['precursors'].keys():
+                    self['precursors']['selectedIons'] = []
+                self['precursors']['selectedIons'].append({'mz': None, 'charge': None})
                 for subElement in element.getiterator():
                     if subElement.tag.endswith('cvParam'):
                         accession = subElement.get('accession')
                         if accession == 'MS:1000040':
                             try:
-                                self['precursors'][-1]['mz'] = float(subElement.get('value'))
+                                self['precursors']['selectedIons'][-1]['mz'] = float(subElement.get('value'))
                             except ValueError:
-                                self['precursors'][-1]['mz'] = subElement.get('value')
+                                self['precursors']['selectedIons'][-1]['mz'] = subElement.get('value')
                         elif accession == 'MS:1000041':
                             try:
-                                self['precursors'][-1]['charge'] = int(subElement.get('value'))
+                                self['precursors']['selectedIons'][-1]['charge'] = int(subElement.get('value'))
                             except ValueError:
-                                self['precursors'][-1]['charge'] = subElement.get('value')
+                                self['precursors']['selectedIons'][-1]['charge'] = subElement.get('value')
                         elif accession == 'MS:1000744':
                             try:
-                                self['precursors'][-1]['mz'] = float(subElement.get('value'))
+                                self['precursors']['selectedIons'][-1]['mz'] = float(subElement.get('value'))
                             except ValueError:
-                                self['precursors'][-1]['mz'] = subElement.get('value')
+                                self['precursors']['selectedIons'][-1]['mz'] = subElement.get('value')
                         else:
                             pass
 

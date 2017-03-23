@@ -50,4 +50,7 @@ MIN_REQ = [
     ('MS:1002314', ['name']              ), # MS-Numpress slof
     ('MS:1000744', ['value']             ), # legacy precursor mz value ...
     ('MS:1000235', ['name']              ), # total ion current chromatogram
+    ('MS:1000827', ['value']             ), # isolation window target m/z
+    ('MS:1000828', ['value']             ), # isolation window lower offset
+    ('MS:1000829', ['value']             ), # isolation window upper offset
 ]
